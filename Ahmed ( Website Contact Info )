@@ -1,0 +1,14 @@
+import { Actor } from 'apify';
+
+await Actor.init();
+
+const input = await Actor.getInput();
+console.log('INPUT:', input);
+
+// Temporary test output
+await Actor.pushData({
+    status: 'Actor is running correctly',
+    receivedInput: input,
+});
+
+await Actor.exit();
