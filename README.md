@@ -1,1 +1,60 @@
-# Website-Contact-Info-Extractor-Nafisa
+import { Actor } from 'apify';
+import cheerio from 'cheerio';
+
+await Actor.init();
+
+const input = await Actor.getInput();
+const startUrls = input?.startUrls || [];
+
+if (!startUrls.length) {
+    throw new Error('No startUrls provided. Please add at least one URL.');
+}
+
+for (const item of startUrls) {
+    const url = item.url;
+
+    const response = await Actor.utils.requestAsBrowser({ url });
+    const html = response.body;
+
+    const $ = cheerio.load(html);
+    const text = $('body').text();
+
+    const emails = [
+        ...new Set(
+            text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}/g) || []
+        )
+    ];
+
+    const phones = [
+        ...new Set(
+            text.match(/(\+?\d[\d\s\-()]{7,})/g) || []
+        )
+    ];
+
+    const socialLinks = [];
+
+    $('a[href]').each((_, el) => {
+        const href = $(el).attr('href');
+        if (
+            href &&
+            (href.includes('linkedin.com') ||
+             href.includes('facebook.com') ||
+             href.includes('facebook.com') ||
+             href.includes('twitter.com') ||
+             href.includes('x.com') ||
+             href.includes('instagram.com'))
+        ) {
+            socialLinks.push(href);
+        }
+    });
+
+    // 🔴 THIS IS THE IMPORTANT PART
+    await Actor.pushData({
+        website: url,
+        emails,
+        phones,
+        socialLinks: [...new Set(socialLinks)]
+    });
+}
+
+await Actor.exit();
